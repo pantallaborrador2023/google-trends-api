@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Query
-from pytrends.request import TrendReq
 from fastapi.middleware.cors import CORSMiddleware
+import requests
 
 app = FastAPI()
 
@@ -12,27 +12,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/trends")
-def get_trends(keyword: str = Query(...)):
+API_KEY = "146a288824d07a7eb9df8da42b1196bb"
+
+@app.get("/news")
+def get_news(keyword: str = Query(...)):
     try:
-        pytrends = TrendReq(hl='es-ES', tz=360)
-        pytrends.build_payload([keyword], timeframe='today 12-m')
-        data = pytrends.interest_over_time()
-        if data.empty:
-            return {"message": f"No se encontraron datos para: {keyword}"}
-        
-        # Eliminar columna 'isPartial' si existe
-        if 'isPartial' in data.columns:
-            data = data.drop(columns=['isPartial'])
-        
-        # Convertimos a formato amigable para JSON
-        datos = [
-            {
-                "date": str(row[0].date()),
-                "value": int(row[1][0])
-            } for row in data.iterrows()
-        ]
-        return {"keyword": keyword, "data": datos}
-    
+        url = f"https://gnews.io/api/v4/search?q={keyword}&lang=es&country=es&max=5&apikey={API_KEY}"
+        response = requests.get(url)
+        response.raise_for_status()
+        data = response.json()
+        return {
+            "keyword": keyword,
+            "articles": [
+                {
+                    "title": article["title"],
+                    "description": article["description"],
+                    "url": article["url"],
+                    "publishedAt": article["publishedAt"]
+                }
+                for article in data.get("articles", [])
+            ]
+        }
     except Exception as e:
         return {"error": str(e)}
