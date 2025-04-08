@@ -12,7 +12,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-API_KEY = "146a288824d07a7eb9df8da42b1196bb"
+API_KEY = "146a288824d07a7eb9df8da42b1196bb"  # <--- Reemplaza esto con tu clave real
 
 @app.get("/news")
 def get_news(keyword: str = Query(...)):
